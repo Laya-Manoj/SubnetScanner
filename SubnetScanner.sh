@@ -1,32 +1,25 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <subnet> <netmask>"
+# Check if nmap is installed
+if ! command -v nmap &> /dev/null; then
+    echo "❌ Error: nmap is not installed. Please install it first."
+    exit 1
+fi
+
+# Check input arguments
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <CIDR-subnet>"
+    echo "Example: $0 192.168.1.0/24"
     exit 1
 fi
 
 SUBNET=$1
-NETMASK=$2
 
-# Calculate the start and end IP addresses for the given subnet
-IFS='.' read -r -a octets <<< "$SUBNET"
+echo "🔍 Scanning subnet: $SUBNET ..."
+echo "--------------------------------------"
 
-# Calculate range of IPs in the subnet
-START_IP="${octets[0]}.${octets[1]}.${octets[2]}.1"
-END_IP="${octets[0]}.${octets[1]}.${octets[2]}.254"
+# Perform a ping scan (-sn) to list active hosts
+nmap -sn "$SUBNET" | grep -E "Nmap scan report|Host is up"
 
-echo "Scanning subnet $SUBNET with netmask $NETMASK"
-echo "Scanning from $START_IP to $END_IP..."
-
-for (( ip=1; ip<=254; ip++ )); do
-    # Construct the IP address
-    CURRENT_IP="${octets[0]}.${octets[1]}.${octets[2]}.$ip"
-
-    # Ping the current IP address
-    ping -c 1 -w 1 $CURRENT_IP &>/dev/null
-    if [ $? -eq 0 ]; then
-        echo "Host $CURRENT_IP is up"
-    fi
-done
-
-echo "Scan complete!"
+echo "--------------------------------------"
+echo "✅ Scan complete!"
